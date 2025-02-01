@@ -356,15 +356,25 @@
             }
 
             handleKeyPress(e) {
-                e.preventDefault();
-                switch(e.key) {
-                    case 'ArrowUp': if (this.direction !== 'down') this.nextDirection = 'up'; break;
-                    case 'ArrowDown': if (this.direction !== 'up') this.nextDirection = 'down'; break;
-                    case 'ArrowLeft': if (this.direction !== 'right') this.nextDirection = 'left'; break;
-                    case 'ArrowRight': if (this.direction !== 'left') this.nextDirection = 'right'; break;
-                    case 'p': this.togglePause(); break;
-                }
-            }
+				e.preventDefault();
+				switch(e.key.toLowerCase()) { // Handle both lowercase and uppercase
+					case 'arrowup': case 'w': 
+						if (this.direction !== 'down') this.nextDirection = 'up'; 
+						break;
+					case 'arrowdown': case 's': 
+						if (this.direction !== 'up') this.nextDirection = 'down'; 
+						break;
+					case 'arrowleft': case 'a': 
+						if (this.direction !== 'right') this.nextDirection = 'left'; 
+						break;
+					case 'arrowright': case 'd': 
+						if (this.direction !== 'left') this.nextDirection = 'right'; 
+						break;
+					case 'p': 
+						this.togglePause(); 
+						break;
+				}
+			}
 
             handleMobileControl(direction) {
                 const validMoves = {
