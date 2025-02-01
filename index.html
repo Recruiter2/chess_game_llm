@@ -2,408 +2,429 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Professional Blackjack Game</title>
+    <title>Blackjack Game</title>
     <style>
         body {
-            font-family: 'Trebuchet MS', 'Lucida Sans Unicode', Arial, sans-serif;
-            background: #006400;
+            font-family: Arial, sans-serif;
+            background-color: #2c5f2d;
             color: white;
-            text-align: center;
-            margin: 0;
-            padding: 20px;
         }
-
         .container {
             max-width: 800px;
             margin: 0 auto;
-            background: rgba(0, 50, 0, 0.8);
             padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.5);
         }
-
-        .score-board {
-            display: flex;
-            justify-content: space-around;
-            margin: 20px 0;
-            padding: 15px;
-            background: #004d00;
-            border-radius: 5px;
-        }
-
         .hand {
-            min-height: 150px;
-            margin: 20px 0;
+            border: 2px solid #ffd700;
             padding: 15px;
-            background: rgba(0, 80, 0, 0.5);
-            border-radius: 5px;
+            margin: 10px;
+            border-radius: 10px;
+            min-height: 120px;
         }
-
         .card {
             display: inline-block;
-            width: 80px;
-            height: 120px;
+            background: white;
+            color: black;
+            width: 60px;
+            height: 80px;
             margin: 5px;
             padding: 10px;
-            background: white;
             border-radius: 5px;
-            color: black;
-            font-weight: bold;
-            box-shadow: 2px 2px 5px rgba(0,0,0,0.3);
-            position: relative;
+            border: 1px solid #333;
+            text-align: center;
+            line-height: 80px;
+            font-size: 1.2em;
         }
-
-        .card.red {
-            color: #cc0000;
+        .hole-card {
+            background: repeating-linear-gradient(
+                45deg,
+                #ff0000,
+                #ff0000 10px,
+                #ffffff 10px,
+                #ffffff 20px
+            );
         }
-
-        .card-value {
-            font-size: 1.4em;
-            position: absolute;
-        }
-
-        .card-suit {
-            font-size: 2.5em;
-            position: absolute;
-            bottom: 5px;
-            right: 5px;
-        }
-
-        .dealer-hand .card:first-child.hidden {
-            background: #2d572c;
-            color: transparent;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .dealer-hand .card.hidden::after {
-            content: "?";
-            color: white;
-            font-size: 2em;
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-        }
-
         .controls {
             margin: 20px 0;
         }
-
         button {
-            padding: 12px 25px;
-            margin: 0 10px;
+            padding: 10px 20px;
+            margin: 5px;
             border: none;
             border-radius: 5px;
-            background: goldenrod;
-            color: #006400;
-            font-weight: bold;
             cursor: pointer;
-            transition: all 0.3s ease;
-        }
-
-        button:hover {
-            background: #ffd700;
-            transform: scale(1.05);
-        }
-
-        button:disabled {
-            background: #666;
-            color: #999;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        #status {
-            min-height: 30px;
-            margin: 15px 0;
-            font-size: 1.2em;
+            background-color: #ffd700;
             font-weight: bold;
-            color: #ffd700;
         }
-
-        .rules {
-            text-align: left;
-            margin: 20px auto;
-            max-width: 600px;
-            background: rgba(0, 50, 0, 0.6);
-            padding: 15px;
+        button:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        .betting {
+            margin: 20px 0;
+        }
+        .status {
+            margin: 10px 0;
+            padding: 10px;
+            background-color: rgba(0,0,0,0.3);
             border-radius: 5px;
+        }
+        .new-game {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .hidden {
+            display: none;
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>♠️♥️ Blackjack ♦️♣️</h1>
+        <h1>Blackjack</h1>
+        <div class="balance">Balance: $<span id="balance">1000</span></div>
         
-        <div class="score-board">
-            <div>Dealer's Score: <span id="dealer-score">0</span></div>
-            <div>Player's Score: <span id="player-score">0</span></div>
+        <div class="betting" id="bettingSection">
+            <input type="number" id="betAmount" min="10" max="1000" value="100">
+            <button onclick="placeBet()">Place Bet</button>
         </div>
 
-        <div class="hand dealer-hand">
-            <h2>Dealer's Hand</h2>
-            <div id="dealer-cards"></div>
+        <div class="game" id="gameSection" style="display: none;">
+            <div class="dealer-hand hand">
+                <h2>Dealer's Hand (<span id="dealerTotal">0</span>)</h2>
+                <div id="dealerCards"></div>
+            </div>
+
+            <div class="player-hands">
+                <div class="player-hand hand" id="playerHand0">
+                    <h2>Your Hand (<span class="playerTotal">0</span>)</h2>
+                    <div class="cards"></div>
+                </div>
+            </div>
+
+            <div class="controls" id="gameControls">
+                <button onclick="playerHit()" id="hitButton">Hit</button>
+                <button onclick="playerStand()" id="standButton">Stand</button>
+                <button onclick="splitHand()" id="splitButton" disabled>Split</button>
+            </div>
+
+            <div class="status" id="gameStatus"></div>
         </div>
 
-        <div class="hand player-hand">
-            <h2>Player's Hand</h2>
-            <div id="player-cards"></div>
-        </div>
-
-        <div id="status"></div>
-
-        <div class="controls">
-            <button id="hit-btn" onclick="playerHit()">Hit</button>
-            <button id="stand-btn" onclick="playerStand()">Stand</button>
-            <button id="new-game-btn" onclick="newGame()">New Game</button>
-        </div>
-
-        <div class="rules">
-            <h3>Game Rules:</h3>
-            <ul>
-                <li>Dealer must hit on soft 17</li>
-                <li>Blackjack pays 3:2</li>
-                <li>Double down available on initial two cards</li>
-                <li>No insurance or splitting in this version</li>
-                <li>Dealer's first card is hidden until stand</li>
-            </ul>
+        <div class="new-game hidden" id="newGameSection">
+            <button onclick="prepareNewGame()">New Game</button>
         </div>
     </div>
 
-    <script>
-        // Game state object
-        let gameState = {
-            deck: [],
-            playerHand: [],
-            dealerHand: [],
-            gameActive: false,
-            playerScore: 0,
-            dealerScore: 0,
-            roundsPlayed: 0
-        };
+<script>
+let gameState = {
+    deck: [],
+    playerHands: [],
+    currentHand: 0,
+    dealerHand: [],
+    balance: 1000,
+    currentBet: 0,
+    numDecks: 6,
+    canSplit: true,
+    gameActive: false,
+    dealerHitsSoft17: true
+};
 
-        // Card creation and deck management
-        function createDeck() {
-            const suits = ['♠', '♣', '♥', '♦'];
-            const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
-            const deck = [];
-
-            for (let suit of suits) {
-                for (let value of values) {
-                    deck.push({
-                        suit: suit,
-                        value: value,
-                        numericValue: getNumericValue(value),
-                        colorClass: (suit === '♥' || suit === '♦') ? 'red' : ''
-                    });
-                }
-            }
-            return shuffleDeck([...deck, ...deck, ...deck, ...deck]); // 6 decks
-        }
-
-        function shuffleDeck(deck) {
-            for (let i = deck.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [deck[i], deck[j]] = [deck[j], deck[i]];
-            }
-            return deck;
-        }
-
-        function getNumericValue(value) {
-            if (['J', 'Q', 'K'].includes(value)) return 10;
-            if (value === 'A') return 11; // Initial value, handled in score calculation
-            return parseInt(value);
-        }
-
-        // Game logic
-        function calculateScore(hand) {
-            let score = hand.reduce((total, card) => total + card.numericValue, 0);
-            let soft = false;
-            
-            // Handle aces
-            const aces = hand.filter(card => card.value === 'A');
-            while (score > 21 && aces.length > 0) {
-                score -= 10;
-                aces.pop();
-                soft = true;
-            }
-            
-            return { total: score, soft: soft };
-        }
-
-        function dealCard(hand, isHidden = false) {
-            if (gameState.deck.length < 15) {
-                gameState.deck = createDeck();
-                setStatus('Shuffling new deck...');
-            }
-            
-            const card = gameState.deck.pop();
-            if (isHidden) card.hidden = true;
-            hand.push(card);
-            updateDisplay();
-        }
-
-        // Display functions
-        function updateDisplay() {
-            // Dealer's hand
-            const dealerCards = document.getElementById('dealer-cards');
-            dealerCards.innerHTML = '';
-            gameState.dealerHand.forEach((card, index) => {
-                if (index === 0 && gameState.gameActive && !gameState.dealerRevealed) {
-                    createCardElement(card, true).forEach(el => dealerCards.appendChild(el));
-                } else {
-                    createCardElement(card).forEach(el => dealerCards.appendChild(el));
-                }
-            });
-
-            // Player's hand
-            const playerCards = document.getElementById('player-cards');
-            playerCards.innerHTML = '';
-            gameState.playerHand.forEach(card => {
-                createCardElement(card).forEach(el => playerCards.appendChild(el));
-            });
-
-            // Scores
-            const dealerScore = gameState.gameActive && !gameState.dealerRevealed 
-                ? calculateScore([gameState.dealerHand[0]]).total
-                : calculateScore(gameState.dealerHand).total;
-            
-            document.getElementById('dealer-score').textContent = dealerScore;
-            document.getElementById('player-score').textContent = calculateScore(gameState.playerHand).total;
-
-            // Update button states
-            document.getElementById('hit-btn').disabled = !gameState.gameActive;
-            document.getElementById('stand-btn').disabled = !gameState.gameActive;
-        }
-
-        function createCardElement(card, isHidden = false) {
-            if (isHidden) {
-                const hiddenDiv = document.createElement('div');
-                hiddenDiv.className = 'card hidden';
-                return [hiddenDiv];
-            }
-
-            const cardDiv = document.createElement('div');
-            cardDiv.className = `card ${card.colorClass}`;
-            
-            const valueTop = document.createElement('div');
-            valueTop.className = 'card-value';
-            valueTop.textContent = card.value;
-            
-            const suit = document.createElement('div');
-            suit.className = 'card-suit';
-            suit.textContent = card.suit;
-            
-            const valueBottom = document.createElement('div');
-            valueBottom.className = 'card-value';
-            valueBottom.style.transform = 'rotate(180deg)';
-            valueBottom.style.bottom = '5px';
-            valueBottom.style.left = '5px';
-            valueBottom.textContent = card.value;
-
-            cardDiv.appendChild(valueTop);
-            cardDiv.appendChild(suit);
-            cardDiv.appendChild(valueBottom);
-            
-            return [cardDiv];
-        }
-
-        function setStatus(message) {
-            document.getElementById('status').textContent = message;
-        }
-
-        // Game flow control
-        function newGame() {
-            gameState.deck = createDeck();
-            gameState.playerHand = [];
-            gameState.dealerHand = [];
-            gameState.gameActive = true;
-            gameState.dealerRevealed = false;
-
-            // Initial deal
-            dealCard(gameState.playerHand);
-            dealCard(gameState.dealerHand, true);
-            dealCard(gameState.playerHand);
-            dealCard(gameState.dealerHand);
-
-            // Check for natural blackjack
-            const playerScore = calculateScore(gameState.playerHand);
-            const dealerScore = calculateScore(gameState.dealerHand);
-
-            if (playerScore.total === 21 && dealerScore.total === 21) {
-                endGame('Push! Both have Blackjack!');
-            } else if (playerScore.total === 21) {
-                endGame('Blackjack! Player wins!');
-            } else if (dealerScore.total === 21) {
-                endGame('Dealer has Blackjack!');
-            }
-
-            updateDisplay();
-        }
-
-        function playerHit() {
-            if (!gameState.gameActive) return;
-            
-            dealCard(gameState.playerHand);
-            const score = calculateScore(gameState.playerHand);
-            
-            if (score.total > 21) {
-                endGame('Player busts! Dealer wins!');
-            } else if (score.total === 21) {
-                playerStand();
+function createDeck() {
+    const suits = ['♠', '♣', '♥', '♦'];
+    const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
+    let deck = [];
+    for (let i = 0; i < gameState.numDecks; i++) {
+        for (let suit of suits) {
+            for (let value of values) {
+                deck.push({ value: value, suit: suit });
             }
         }
+    }
+    return deck;
+}
 
-        function playerStand() {
-            gameState.gameActive = false;
-            gameState.dealerRevealed = true;
+function shuffleDeck() {
+    for (let i = gameState.deck.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [gameState.deck[i], gameState.deck[j]] = [gameState.deck[j], gameState.deck[i]];
+    }
+}
+
+function dealCard(hand, faceUp = true) {
+    if (gameState.deck.length < 20) {
+        gameState.deck = createDeck();
+        shuffleDeck();
+    }
+    const card = gameState.deck.pop();
+    hand.push({ ...card, faceUp: faceUp });
+    return card;
+}
+
+function calculateHandValue(hand) {
+    let value = 0;
+    let aces = 0;
+    
+    for (let card of hand) {
+        if (!card.faceUp) continue;
+        if (card.value === 'A') {
+            aces++;
+            value += 11;
+        } else if (['J','Q','K'].includes(card.value)) {
+            value += 10;
+        } else {
+            value += parseInt(card.value);
+        }
+    }
+
+    while (value > 21 && aces > 0) {
+        value -= 10;
+        aces--;
+    }
+    return value;
+}
+
+function isBlackjack(hand) {
+    return hand.length === 2 && calculateHandValue(hand) === 21;
+}
+
+function dealerShouldHit() {
+    const value = calculateHandValue(gameState.dealerHand);
+    const soft17 = gameState.dealerHand.some(c => c.value === 'A' && c.faceUp) && value === 17;
+    return value < 17 || (soft17 && gameState.dealerHitsSoft17);
+}
+
+function playerHit() {
+    const currentHand = gameState.playerHands[gameState.currentHand];
+    dealCard(currentHand.cards);
+    
+    const handValue = calculateHandValue(currentHand.cards);
+    updateDisplay();
+    
+    if (handValue > 21) {
+        currentHand.status = 'bust';
+        gameState.currentHand++;
+        if (gameState.currentHand >= gameState.playerHands.length) {
             dealerTurn();
         }
+    }
+}
 
-        function dealerTurn() {
-            let dealerScore = calculateScore(gameState.dealerHand);
-            
-            while (dealerScore.total < 17 || (dealerScore.total === 17 && dealerScore.soft)) {
-                dealCard(gameState.dealerHand);
-                dealerScore = calculateScore(gameState.dealerHand);
-            }
+function playerStand() {
+    gameState.playerHands[gameState.currentHand].status = 'stand';
+    gameState.currentHand++;
+    
+    if (gameState.currentHand >= gameState.playerHands.length) {
+        dealerTurn();
+    }
+    updateDisplay();
+}
 
-            determineWinner();
-        }
+function splitHand() {
+    if (!gameState.canSplit) return;
+    
+    const originalHand = gameState.playerHands[gameState.currentHand];
+    const newHand = {
+        cards: [originalHand.cards.pop()],
+        bet: originalHand.bet,
+        status: 'active'
+    };
+    
+    originalHand.cards.push(dealCard(originalHand.cards));
+    newHand.cards.push(dealCard(newHand.cards));
+    
+    gameState.playerHands.push(newHand);
+    gameState.canSplit = false;
+    updateDisplay();
+}
 
-        function determineWinner() {
-            const playerScore = calculateScore(gameState.playerHand);
-            const dealerScore = calculateScore(gameState.dealerHand);
-            
-            let message = '';
-            if (playerScore.total > 21) {
-                message = 'Player busts! Dealer wins!';
-            } else if (dealerScore.total > 21) {
-                message = 'Dealer busts! Player wins!';
-            } else if (playerScore.total > dealerScore.total) {
-                message = 'Player wins!';
-            } else if (dealerScore.total > playerScore.total) {
-                message = 'Dealer wins!';
+function dealerTurn() {
+    revealDealerCards();
+    while (dealerShouldHit()) {
+        dealCard(gameState.dealerHand);
+    }
+    concludeGame();
+}
+
+function concludeGame() {
+    const dealerValue = calculateHandValue(gameState.dealerHand);
+    const dealerBust = dealerValue > 21;
+    
+    gameState.playerHands.forEach(hand => {
+        const playerValue = calculateHandValue(hand.cards);
+        
+        if (hand.status === 'bust') {
+            hand.result = 'lost';
+        } else if (dealerBust) {
+            hand.result = 'won';
+        } else {
+            if (playerValue > dealerValue) {
+                hand.result = 'won';
+            } else if (playerValue === dealerValue) {
+                hand.result = 'push';
             } else {
-                message = 'Push!';
+                hand.result = 'lost';
             }
-            
-            endGame(message);
         }
 
-        function endGame(message) {
-            gameState.gameActive = false;
-            gameState.dealerRevealed = true;
-            setStatus(message);
-            updateDisplay();
+        if (isBlackjack(hand.cards)) {
+            if (isBlackjack(gameState.dealerHand)) {
+                hand.result = 'push';
+            } else {
+                hand.result = 'blackjack';
+            }
         }
+    });
 
-        // Initialize game
-        document.addEventListener('DOMContentLoaded', () => {
-            newGame();
+    updateBalance();
+    gameState.gameActive = false;
+    updateDisplay();
+    showResults();
+    
+    document.getElementById('gameSection').style.display = 'none';
+    document.getElementById('newGameSection').classList.remove('hidden');
+}
+
+function updateDisplay() {
+    const dealerCardsDiv = document.getElementById('dealerCards');
+    dealerCardsDiv.innerHTML = '';
+    gameState.dealerHand.forEach((card, index) => {
+        const cardDiv = document.createElement('div');
+        cardDiv.className = `card ${!card.faceUp ? 'hole-card' : ''}`;
+        cardDiv.textContent = card.faceUp ? `${card.value}${card.suit}` : '';
+        dealerCardsDiv.appendChild(cardDiv);
+    });
+    document.getElementById('dealerTotal').textContent = 
+        gameState.dealerHand.every(c => c.faceUp) ? calculateHandValue(gameState.dealerHand) : '?';
+
+    const playerHandsDiv = document.querySelector('.player-hands');
+    playerHandsDiv.innerHTML = '';
+    
+    gameState.playerHands.forEach((hand, index) => {
+        const handDiv = document.createElement('div');
+        handDiv.className = `player-hand hand ${index === gameState.currentHand ? 'active-hand' : ''}`;
+        handDiv.innerHTML = `
+            <h2>Your Hand ${gameState.playerHands.length > 1 ? index + 1 : ''} 
+                (<span class="playerTotal">${calculateHandValue(hand.cards)}</span>)
+            </h2>
+            <div class="cards"></div>
+        `;
+        
+        hand.cards.forEach(card => {
+            const cardDiv = document.createElement('div');
+            cardDiv.className = 'card';
+            cardDiv.textContent = `${card.value}${card.suit}`;
+            handDiv.querySelector('.cards').appendChild(cardDiv);
         });
-    </script>
+        
+        playerHandsDiv.appendChild(handDiv);
+    });
+
+    const currentHand = gameState.playerHands[gameState.currentHand];
+    const canSplit = gameState.canSplit && 
+        currentHand.cards.length === 2 && 
+        currentHand.cards[0].value === currentHand.cards[1].value &&
+        gameState.playerHands.length < 2;
+
+    document.getElementById('splitButton').disabled = !canSplit || !gameState.gameActive;
+    document.getElementById('hitButton').disabled = !gameState.gameActive || currentHand.status !== 'active';
+    document.getElementById('standButton').disabled = !gameState.gameActive || currentHand.status !== 'active';
+}
+
+function revealDealerCards() {
+    gameState.dealerHand.forEach(card => card.faceUp = true);
+}
+
+function updateBalance() {
+    gameState.playerHands.forEach(hand => {
+        switch(hand.result) {
+            case 'won':
+                gameState.balance += hand.bet;
+                break;
+            case 'lost':
+                gameState.balance -= hand.bet;
+                break;
+            case 'blackjack':
+                gameState.balance += hand.bet * 1.5;
+                break;
+            case 'push':
+                break;
+        }
+    });
+    document.getElementById('balance').textContent = gameState.balance;
+    document.getElementById('betAmount').max = gameState.balance;
+}
+
+function showResults() {
+    const results = gameState.playerHands.map((hand, index) => {
+        const handNumber = gameState.playerHands.length > 1 ? `Hand ${index + 1}: ` : '';
+        switch(hand.result) {
+            case 'won': return `${handNumber}Win! (+$${hand.bet})`;
+            case 'lost': return `${handNumber}Lost (-$${hand.bet})`;
+            case 'blackjack': return `${handNumber}Blackjack! (+$${hand.bet * 1.5})`;
+            case 'push': return `${handNumber}Push`;
+        }
+    }).join('\n');
+    
+    document.getElementById('gameStatus').textContent = results;
+}
+
+function prepareNewGame() {
+    gameState.playerHands = [];
+    gameState.dealerHand = [];
+    gameState.currentHand = 0;
+    gameState.canSplit = true;
+    
+    document.getElementById('dealerCards').innerHTML = '';
+    document.getElementById('playerHand0').querySelector('.cards').innerHTML = '';
+    document.getElementById('gameStatus').textContent = '';
+    
+    document.getElementById('newGameSection').classList.add('hidden');
+    document.getElementById('bettingSection').style.display = 'block';
+}
+
+function startGame() {
+    gameState.deck = createDeck();
+    shuffleDeck();
+    gameState.dealerHand = [];
+    gameState.playerHands = [{
+        cards: [],
+        bet: gameState.currentBet,
+        status: 'active'
+    }];
+    gameState.currentHand = 0;
+    gameState.canSplit = true;
+    gameState.gameActive = true;
+
+    dealCard(gameState.playerHands[0].cards);
+    dealCard(gameState.dealerHand, false);
+    dealCard(gameState.playerHands[0].cards);
+    dealCard(gameState.dealerHand);
+
+    if (isBlackjack(gameState.dealerHand)) {
+        revealDealerCards();
+        gameState.gameActive = false;
+        concludeGame();
+    }
+
+    updateDisplay();
+    document.getElementById('gameSection').style.display = 'block';
+}
+
+function placeBet() {
+    const betInput = document.getElementById('betAmount');
+    const betAmount = parseInt(betInput.value);
+    
+    if (betAmount < 10 || betAmount > gameState.balance) {
+        alert(`Invalid bet amount. Must be between 10 and ${gameState.balance}`);
+        return;
+    }
+    
+    gameState.currentBet = betAmount;
+    document.getElementById('bettingSection').style.display = 'none';
+    startGame();
+}
+
+document.getElementById('betAmount').max = gameState.balance;
+</script>
 </body>
 </html>
