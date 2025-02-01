@@ -1,430 +1,283 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <title>Blackjack Game</title>
+    <title>Physics Wheels</title>
     <style>
+        canvas {
+            border: 2px solid #000;
+            background: #f0f0f0;
+        }
         body {
-            font-family: Arial, sans-serif;
-            background-color: #2c5f2d;
+            margin: 0;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        #ui {
+            position: absolute;
+            top: 10px;
+            left: 10px;
             color: white;
-        }
-        .container {
-            max-width: 800px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-        .hand {
-            border: 2px solid #ffd700;
-            padding: 15px;
-            margin: 10px;
-            border-radius: 10px;
-            min-height: 120px;
-        }
-        .card {
-            display: inline-block;
-            background: white;
-            color: black;
-            width: 60px;
-            height: 80px;
-            margin: 5px;
-            padding: 10px;
-            border-radius: 5px;
-            border: 1px solid #333;
-            text-align: center;
-            line-height: 80px;
-            font-size: 1.2em;
-        }
-        .hole-card {
-            background: repeating-linear-gradient(
-                45deg,
-                #ff0000,
-                #ff0000 10px,
-                #ffffff 10px,
-                #ffffff 20px
-            );
-        }
-        .controls {
-            margin: 20px 0;
-        }
-        button {
-            padding: 10px 20px;
-            margin: 5px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            background-color: #ffd700;
-            font-weight: bold;
-        }
-        button:disabled {
-            background-color: #cccccc;
-            cursor: not-allowed;
-        }
-        .betting {
-            margin: 20px 0;
-        }
-        .status {
-            margin: 10px 0;
-            padding: 10px;
-            background-color: rgba(0,0,0,0.3);
-            border-radius: 5px;
-        }
-        .new-game {
-            margin-top: 20px;
-            text-align: center;
-        }
-        .hidden {
-            display: none;
+            font-family: Arial;
+            text-shadow: 2px 2px 2px black;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Blackjack</h1>
-        <div class="balance">Balance: $<span id="balance">1000</span></div>
-        
-        <div class="betting" id="bettingSection">
-            <input type="number" id="betAmount" min="10" max="1000" value="100">
-            <button onclick="placeBet()">Place Bet</button>
-        </div>
+    <div id="ui">Health: <span id="health">100</span>% | Score: <span id="score">0</span></div>
+    <canvas id="gameCanvas"></canvas>
 
-        <div class="game" id="gameSection" style="display: none;">
-            <div class="dealer-hand hand">
-                <h2>Dealer's Hand (<span id="dealerTotal">0</span>)</h2>
-                <div id="dealerCards"></div>
-            </div>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.18.0/matter.min.js"></script>
+    <script>
+        // Engine setup
+        const Engine = Matter.Engine,
+            Render = Matter.Render,
+            Runner = Matter.Runner,
+            Bodies = Matter.Bodies,
+            Composite = Matter.Composite,
+            Composites = Matter.Composites,
+            Constraint = Matter.Constraint,
+            Events = Matter.Events,
+            Mouse = Matter.Mouse,
+            MouseConstraint = Matter.MouseConstraint;
 
-            <div class="player-hands">
-                <div class="player-hand hand" id="playerHand0">
-                    <h2>Your Hand (<span class="playerTotal">0</span>)</h2>
-                    <div class="cards"></div>
-                </div>
-            </div>
-
-            <div class="controls" id="gameControls">
-                <button onclick="playerHit()" id="hitButton">Hit</button>
-                <button onclick="playerStand()" id="standButton">Stand</button>
-                <button onclick="splitHand()" id="splitButton" disabled>Split</button>
-            </div>
-
-            <div class="status" id="gameStatus"></div>
-        </div>
-
-        <div class="new-game hidden" id="newGameSection">
-            <button onclick="prepareNewGame()">New Game</button>
-        </div>
-    </div>
-
-<script>
-let gameState = {
-    deck: [],
-    playerHands: [],
-    currentHand: 0,
-    dealerHand: [],
-    balance: 1000,
-    currentBet: 0,
-    numDecks: 6,
-    canSplit: true,
-    gameActive: false,
-    dealerHitsSoft17: true
-};
-
-function createDeck() {
-    const suits = ['♠', '♣', '♥', '♦'];
-    const values = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];
-    let deck = [];
-    for (let i = 0; i < gameState.numDecks; i++) {
-        for (let suit of suits) {
-            for (let value of values) {
-                deck.push({ value: value, suit: suit });
+        const canvas = document.getElementById('gameCanvas');
+        const engine = Engine.create();
+        const render = Render.create({
+            element: document.body,
+            engine: engine,
+            canvas: canvas,
+            options: {
+                width: 1280,
+                height: 720,
+                wireframes: false,
+                background: '#f0f0f0'
             }
-        }
-    }
-    return deck;
-}
-
-function shuffleDeck() {
-    for (let i = gameState.deck.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [gameState.deck[i], gameState.deck[j]] = [gameState.deck[j], gameState.deck[i]];
-    }
-}
-
-function dealCard(hand, faceUp = true) {
-    if (gameState.deck.length < 20) {
-        gameState.deck = createDeck();
-        shuffleDeck();
-    }
-    const card = gameState.deck.pop();
-    hand.push({ ...card, faceUp: faceUp });
-    return card;
-}
-
-function calculateHandValue(hand) {
-    let value = 0;
-    let aces = 0;
-    
-    for (let card of hand) {
-        if (!card.faceUp) continue;
-        if (card.value === 'A') {
-            aces++;
-            value += 11;
-        } else if (['J','Q','K'].includes(card.value)) {
-            value += 10;
-        } else {
-            value += parseInt(card.value);
-        }
-    }
-
-    while (value > 21 && aces > 0) {
-        value -= 10;
-        aces--;
-    }
-    return value;
-}
-
-function isBlackjack(hand) {
-    return hand.length === 2 && calculateHandValue(hand) === 21;
-}
-
-function dealerShouldHit() {
-    const value = calculateHandValue(gameState.dealerHand);
-    const soft17 = gameState.dealerHand.some(c => c.value === 'A' && c.faceUp) && value === 17;
-    return value < 17 || (soft17 && gameState.dealerHitsSoft17);
-}
-
-function playerHit() {
-    const currentHand = gameState.playerHands[gameState.currentHand];
-    dealCard(currentHand.cards);
-    
-    const handValue = calculateHandValue(currentHand.cards);
-    updateDisplay();
-    
-    if (handValue > 21) {
-        currentHand.status = 'bust';
-        gameState.currentHand++;
-        if (gameState.currentHand >= gameState.playerHands.length) {
-            dealerTurn();
-        }
-    }
-}
-
-function playerStand() {
-    gameState.playerHands[gameState.currentHand].status = 'stand';
-    gameState.currentHand++;
-    
-    if (gameState.currentHand >= gameState.playerHands.length) {
-        dealerTurn();
-    }
-    updateDisplay();
-}
-
-function splitHand() {
-    if (!gameState.canSplit) return;
-    
-    const originalHand = gameState.playerHands[gameState.currentHand];
-    const newHand = {
-        cards: [originalHand.cards.pop()],
-        bet: originalHand.bet,
-        status: 'active'
-    };
-    
-    originalHand.cards.push(dealCard(originalHand.cards));
-    newHand.cards.push(dealCard(newHand.cards));
-    
-    gameState.playerHands.push(newHand);
-    gameState.canSplit = false;
-    updateDisplay();
-}
-
-function dealerTurn() {
-    revealDealerCards();
-    while (dealerShouldHit()) {
-        dealCard(gameState.dealerHand);
-    }
-    concludeGame();
-}
-
-function concludeGame() {
-    const dealerValue = calculateHandValue(gameState.dealerHand);
-    const dealerBust = dealerValue > 21;
-    
-    gameState.playerHands.forEach(hand => {
-        const playerValue = calculateHandValue(hand.cards);
-        
-        if (hand.status === 'bust') {
-            hand.result = 'lost';
-        } else if (dealerBust) {
-            hand.result = 'won';
-        } else {
-            if (playerValue > dealerValue) {
-                hand.result = 'won';
-            } else if (playerValue === dealerValue) {
-                hand.result = 'push';
-            } else {
-                hand.result = 'lost';
-            }
-        }
-
-        if (isBlackjack(hand.cards)) {
-            if (isBlackjack(gameState.dealerHand)) {
-                hand.result = 'push';
-            } else {
-                hand.result = 'blackjack';
-            }
-        }
-    });
-
-    updateBalance();
-    gameState.gameActive = false;
-    updateDisplay();
-    showResults();
-    
-    document.getElementById('gameSection').style.display = 'none';
-    document.getElementById('newGameSection').classList.remove('hidden');
-}
-
-function updateDisplay() {
-    const dealerCardsDiv = document.getElementById('dealerCards');
-    dealerCardsDiv.innerHTML = '';
-    gameState.dealerHand.forEach((card, index) => {
-        const cardDiv = document.createElement('div');
-        cardDiv.className = `card ${!card.faceUp ? 'hole-card' : ''}`;
-        cardDiv.textContent = card.faceUp ? `${card.value}${card.suit}` : '';
-        dealerCardsDiv.appendChild(cardDiv);
-    });
-    document.getElementById('dealerTotal').textContent = 
-        gameState.dealerHand.every(c => c.faceUp) ? calculateHandValue(gameState.dealerHand) : '?';
-
-    const playerHandsDiv = document.querySelector('.player-hands');
-    playerHandsDiv.innerHTML = '';
-    
-    gameState.playerHands.forEach((hand, index) => {
-        const handDiv = document.createElement('div');
-        handDiv.className = `player-hand hand ${index === gameState.currentHand ? 'active-hand' : ''}`;
-        handDiv.innerHTML = `
-            <h2>Your Hand ${gameState.playerHands.length > 1 ? index + 1 : ''} 
-                (<span class="playerTotal">${calculateHandValue(hand.cards)}</span>)
-            </h2>
-            <div class="cards"></div>
-        `;
-        
-        hand.cards.forEach(card => {
-            const cardDiv = document.createElement('div');
-            cardDiv.className = 'card';
-            cardDiv.textContent = `${card.value}${card.suit}`;
-            handDiv.querySelector('.cards').appendChild(cardDiv);
         });
-        
-        playerHandsDiv.appendChild(handDiv);
-    });
 
-    const currentHand = gameState.playerHands[gameState.currentHand];
-    const canSplit = gameState.canSplit && 
-        currentHand.cards.length === 2 && 
-        currentHand.cards[0].value === currentHand.cards[1].value &&
-        gameState.playerHands.length < 2;
+        // Game State
+        let player = null;
+        let projectiles = [];
+        let health = 100;
+        let score = 0;
+        let isGameOver = false;
 
-    document.getElementById('splitButton').disabled = !canSplit || !gameState.gameActive;
-    document.getElementById('hitButton').disabled = !gameState.gameActive || currentHand.status !== 'active';
-    document.getElementById('standButton').disabled = !gameState.gameActive || currentHand.status !== 'active';
-}
-
-function revealDealerCards() {
-    gameState.dealerHand.forEach(card => card.faceUp = true);
-}
-
-function updateBalance() {
-    gameState.playerHands.forEach(hand => {
-        switch(hand.result) {
-            case 'won':
-                gameState.balance += hand.bet;
-                break;
-            case 'lost':
-                gameState.balance -= hand.bet;
-                break;
-            case 'blackjack':
-                gameState.balance += hand.bet * 1.5;
-                break;
-            case 'push':
-                break;
+        // Initialize physics world
+        function initWorld() {
+            // Ground
+            Composite.add(engine.world, [
+                Bodies.rectangle(640, 710, 1280, 20, { 
+                    isStatic: true,
+                    render: { fillStyle: '#666666' }
+                }),
+                // Obstacles
+                Bodies.rectangle(500, 600, 200, 20, {
+                    isStatic: true,
+                    angle: Math.PI * 0.1,
+                    render: { fillStyle: '#ff0000' }
+                }),
+                Bodies.rectangle(900, 650, 100, 100, {
+                    isStatic: true,
+                    render: { fillStyle: '#00ff00' }
+                }),
+                // Spikes
+                Bodies.trapezoid(300, 650, 50, 30, 0.8, {
+                    isStatic: true,
+                    render: { fillStyle: '#000000' }
+                })
+            ]);
         }
-    });
-    document.getElementById('balance').textContent = gameState.balance;
-    document.getElementById('betAmount').max = gameState.balance;
-}
 
-function showResults() {
-    const results = gameState.playerHands.map((hand, index) => {
-        const handNumber = gameState.playerHands.length > 1 ? `Hand ${index + 1}: ` : '';
-        switch(hand.result) {
-            case 'won': return `${handNumber}Win! (+$${hand.bet})`;
-            case 'lost': return `${handNumber}Lost (-$${hand.bet})`;
-            case 'blackjack': return `${handNumber}Blackjack! (+$${hand.bet * 1.5})`;
-            case 'push': return `${handNumber}Push`;
+        // Player creation
+        function createPlayer() {
+            // Bicycle vehicle
+            const vehicle = Composites.car(200, 500, 100, 50, 30);
+            
+            // Rider
+            const rider = Composites.stack(240, 450, 1, 2, 0, 0, (x, y) => {
+                return Bodies.circle(x, y, 15, {
+                    render: {
+                        fillStyle: '#ffffff',
+                        lineWidth: 2,
+                        strokeStyle: '#000000'
+                    }
+                });
+            });
+            
+            // Connect rider to vehicle
+            Composite.add(vehicle, [
+                Constraint.create({
+                    bodyA: vehicle.bodies[0],
+                    bodyB: rider.bodies[0],
+                    pointA: { x: 25, y: 0 },
+                    pointB: { x: 0, y: -15 },
+                    stiffness: 0.5
+                })
+            ]);
+
+            Composite.add(engine.world, [vehicle, rider]);
+            return { vehicle, rider };
         }
-    }).join('\n');
-    
-    document.getElementById('gameStatus').textContent = results;
-}
 
-function prepareNewGame() {
-    gameState.playerHands = [];
-    gameState.dealerHand = [];
-    gameState.currentHand = 0;
-    gameState.canSplit = true;
-    
-    document.getElementById('dealerCards').innerHTML = '';
-    document.getElementById('playerHand0').querySelector('.cards').innerHTML = '';
-    document.getElementById('gameStatus').textContent = '';
-    
-    document.getElementById('newGameSection').classList.add('hidden');
-    document.getElementById('bettingSection').style.display = 'block';
-}
+        // Projectile system
+        function shootProjectile(position, angle) {
+            const projectile = Bodies.circle(
+                position.x,
+                position.y,
+                5,
+                {
+                    label: 'projectile',
+                    density: 0.1,
+                    render: { fillStyle: '#ffff00' }
+                }
+            );
+            
+            Matter.Body.setVelocity(projectile, {
+                x: Math.cos(angle) * 15,
+                y: Math.sin(angle) * 15
+            });
+            
+            Composite.add(engine.world, projectile);
+            projectiles.push(projectile);
+        }
 
-function startGame() {
-    gameState.deck = createDeck();
-    shuffleDeck();
-    gameState.dealerHand = [];
-    gameState.playerHands = [{
-        cards: [],
-        bet: gameState.currentBet,
-        status: 'active'
-    }];
-    gameState.currentHand = 0;
-    gameState.canSplit = true;
-    gameState.gameActive = true;
+        // Damage system
+        function applyDamage(body, amount) {
+            if (body.label === 'rider') {
+                health = Math.max(0, health - amount);
+                document.getElementById('health').textContent = health;
+                
+                body.render.fillStyle = '#ff0000';
+                setTimeout(() => {
+                    if (body.render) body.render.fillStyle = '#ffffff';
+                }, 200);
+                
+                if (health <= 0) gameOver();
+            }
+        }
 
-    dealCard(gameState.playerHands[0].cards);
-    dealCard(gameState.dealerHand, false);
-    dealCard(gameState.playerHands[0].cards);
-    dealCard(gameState.dealerHand);
+        // Collision handling
+        function handleCollisions() {
+            Events.on(engine, 'collisionStart', event => {
+                event.pairs.forEach(pair => {
+                    const bodies = [pair.bodyA, pair.bodyB];
+                    
+                    // Projectile collisions
+                    bodies.forEach(body => {
+                        if (body.label === 'projectile') {
+                            Composite.remove(engine.world, body);
+                            projectiles = projectiles.filter(p => p !== body);
+                        }
+                    });
 
-    if (isBlackjack(gameState.dealerHand)) {
-        revealDealerCards();
-        gameState.gameActive = false;
-        concludeGame();
-    }
+                    // Spike damage
+                    if (bodies.some(b => b.label === 'rider') && 
+                        bodies.some(b => b.render.fillStyle === '#000000')) {
+                        applyDamage(bodies.find(b => b.label === 'rider'), 25);
+                    }
+                });
+            });
+        }
 
-    updateDisplay();
-    document.getElementById('gameSection').style.display = 'block';
-}
+        // Game state management
+        function gameOver() {
+            isGameOver = true;
+            alert(`Game Over! Score: ${score}`);
+            resetGame();
+        }
 
-function placeBet() {
-    const betInput = document.getElementById('betAmount');
-    const betAmount = parseInt(betInput.value);
-    
-    if (betAmount < 10 || betAmount > gameState.balance) {
-        alert(`Invalid bet amount. Must be between 10 and ${gameState.balance}`);
-        return;
-    }
-    
-    gameState.currentBet = betAmount;
-    document.getElementById('bettingSection').style.display = 'none';
-    startGame();
-}
+        function resetGame() {
+            Composite.clear(engine.world);
+            initWorld();
+            player = createPlayer();
+            health = 100;
+            score = 0;
+            isGameOver = false;
+            document.getElementById('health').textContent = health;
+            document.getElementById('score').textContent = score;
+        }
 
-document.getElementById('betAmount').max = gameState.balance;
-</script>
+        // Controls
+        const keys = {};
+        window.addEventListener('keydown', e => keys[e.key] = true);
+        window.addEventListener('keyup', e => keys[e.key] = false);
+
+        function handleControls() {
+            if (isGameOver) return;
+
+            if (keys['ArrowLeft']) {
+                Matter.Body.setAngularVelocity(player.vehicle.bodies[1], -0.05);
+            }
+            if (keys['ArrowRight']) {
+                Matter.Body.setAngularVelocity(player.vehicle.bodies[1], 0.05);
+            }
+            if (keys['ArrowUp']) {
+                Matter.Body.setVelocity(player.vehicle.bodies[0], {
+                    x: player.vehicle.bodies[0].velocity.x,
+                    y: -5
+                });
+            }
+            if (keys[' ']) {
+                const position = player.vehicle.bodies[0].position;
+                shootProjectile(position, Math.PI);
+                score += 10;
+                document.getElementById('score').textContent = score;
+            }
+        }
+
+        // Blood particle system
+        function createBloodSplatter(position) {
+            const splatter = Composites.stack(position.x - 10, position.y - 10, 5, 5, 0, 0, (x, y) => {
+                return Bodies.circle(x, y, 2, {
+                    render: { fillStyle: '#ff0000' },
+                    friction: 0.1,
+                    lifetime: 100
+                });
+            });
+            
+            Composite.add(engine.world, splatter);
+        }
+
+        // Game loop
+        function update() {
+            handleControls();
+            
+            // Update physics
+            Engine.update(engine);
+            
+            // Cleanup old projectiles
+            projectiles.forEach((projectile, index) => {
+                if (projectile.position.y > 720 || 
+                    projectile.position.x < 0 || 
+                    projectile.position.x > 1280) {
+                    Composite.remove(engine.world, projectile);
+                    projectiles.splice(index, 1);
+                }
+            });
+            
+            requestAnimationFrame(update);
+        }
+
+        // Initialize game
+        initWorld();
+        player = createPlayer();
+        handleCollisions();
+        Runner.run(engine);
+        Render.run(render);
+        update();
+
+        // Add mouse control
+        const mouse = Mouse.create(render.canvas);
+        const mouseConstraint = MouseConstraint.create(engine, {
+            mouse: mouse,
+            constraint: {
+                stiffness: 0.2,
+                render: { visible: false }
+            }
+        });
+        Composite.add(engine.world, mouseConstraint);
+        render.mouse = mouse;
+    </script>
 </body>
 </html>
