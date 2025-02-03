@@ -500,13 +500,68 @@
             }
 
             aiMove() {
-                const moves = this.board.getAllValidMoves(this.aiColor);
-                if (moves.length === 0) return;
+				const pieceValues = {
+					pawn: 1,
+					knight: 3,
+					bishop: 3,
+					rook: 5,
+					queen: 9,
+					king: 0
+				};
 
-                const randomMove = moves[Math.floor(Math.random() * moves.length)];
-                this.makeMove([randomMove.from, randomMove.to]);
-                this.updateBoard();
-            }
+				const moves = this.board.getAllValidMoves(this.aiColor);
+				if (moves.length === 0) return;
+
+				const evaluatedMoves = moves.map(move => {
+					const copiedBoard = this.board.clone();
+					const from = move.from;
+					const to = move.to;
+					const movedPiece = copiedBoard.squares[from[0]][from[1]];
+					const targetPiece = copiedBoard.squares[to[0]][to[1]];
+
+					copiedBoard.movePiece(from, to);
+					copiedBoard.currentTurn = copiedBoard.currentTurn === 'white' ? 'black' : 'white';
+
+					let score = 0;
+					const isCheckmate = copiedBoard.isCheckmate(copiedBoard.currentTurn);
+					const isCheck = copiedBoard.isCheck(copiedBoard.currentTurn);
+					const capturedValue = targetPiece ? pieceValues[targetPiece.type] : 0;
+					const isAttacked = copiedBoard.isSquareAttacked(to, copiedBoard.currentTurn);
+
+					// Checkmate has highest priority
+					if (isCheckmate) {
+						score += 1000;
+					}
+					// Check gives significant bonus
+					else if (isCheck) {
+						score += 100;
+					}
+
+					// Material gain calculation
+					score += capturedValue;
+
+					// Penalize moving into attacked squares
+					if (isAttacked) {
+						score -= pieceValues[movedPiece.type];
+					}
+
+					// Prefer center control for knights
+					if (movedPiece.type === 'knight') {
+						const centerScore = (3.5 - Math.abs(to[1] - 3.5)) + (3.5 - Math.abs(to[0] - 3.5));
+						score += centerScore * 0.1;
+					}
+
+					return { move, score };
+				});
+
+				// Select best move from evaluated options
+				const maxScore = Math.max(...evaluatedMoves.map(m => m.score));
+				const bestMoves = evaluatedMoves.filter(m => m.score === maxScore);
+				const selectedMove = bestMoves[Math.floor(Math.random() * bestMoves.length)].move;
+
+				this.makeMove([selectedMove.from, selectedMove.to]);
+				this.updateBoard();
+			}
 
             reset() {
                 this.board = new Board();
