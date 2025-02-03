@@ -2,9 +2,67 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-	<link rel="icon" href="https://i.imgur.com/IWqMBMH.png" type="image/png">
     <title>Chess Game with AI</title>
     <style>
+		body {
+			margin: 0;
+			min-height: 100vh;
+			display: flex;
+			justify-content: center;
+			align-items: center;
+			flex-direction: column;
+			background: linear-gradient(135deg, #1a1a1a, #4a4a4a);
+			font-family: Arial, sans-serif;
+		}
+
+		.game-container {
+			background: rgba(255, 255, 255, 0.1);
+			padding: 2rem;
+			border-radius: 15px;
+			box-shadow: 0 0 30px rgba(0, 0, 0, 0.3);
+		}
+
+		.status {
+			background: rgba(0, 0, 0, 0.7);
+			color: #fff;
+			padding: 15px 30px;
+			border-radius: 8px;
+			margin-bottom: 20px;
+			text-align: center;
+			font-size: 24px;
+			text-transform: uppercase;
+			letter-spacing: 2px;
+		}
+
+		.board {
+			border-radius: 8px;
+			overflow: hidden;
+			box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+		}
+
+		.controls {
+			margin-top: 20px;
+			text-align: center;
+		}
+
+		button {
+			background: #27ae60;
+			color: white;
+			border: none;
+			padding: 12px 25px;
+			border-radius: 5px;
+			cursor: pointer;
+			font-size: 16px;
+			transition: all 0.3s ease;
+			text-transform: uppercase;
+			letter-spacing: 1px;
+		}
+
+		button:hover {
+			background: #219a52;
+			transform: translateY(-2px);
+			box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+		}
         .board {
             width: 560px;
             height: 560px;
@@ -65,10 +123,12 @@
     </style>
 </head>
 <body>
-    <div class="status" id="status">White's Turn</div>
-    <div class="board" id="board"></div>
-    <div class="controls">
-        <button onclick="game.reset()">New Game</button>
+    <div class="game-container">
+        <div class="status" id="status">White's Turn</div>
+        <div class="board" id="board"></div>
+        <div class="controls">
+            <button onclick="game.reset()">New Game</button>
+        </div>
     </div>
 
     <script>
@@ -397,37 +457,41 @@
             }
 
             handleSquareClick(event) {
-                if (this.board.gameOver || 
-                   (this.board.currentTurn === this.aiColor && !this.board.selectedPiece)) return;
+            if (this.board.gameOver || 
+               (this.board.currentTurn === this.aiColor && !this.board.selectedPiece)) return;
 
-                const row = parseInt(event.target.dataset.row);
-                const col = parseInt(event.target.dataset.col);
-                const piece = this.board.squares[row][col];
+            // Get the actual square element even when clicking on the possible-move dot
+            const squareElement = event.target.closest('.square');
+            if (!squareElement) return;
 
-                if (this.board.selectedPiece) {
-                    if (this.board.possibleMoves.some(([r, c]) => r === row && c === col)) {
-                        this.makeMove([this.board.selectedPiece.position, [row, col]]);
-                        
-                        if (!this.board.gameOver && this.board.currentTurn === this.aiColor) {
-                            setTimeout(() => this.aiMove(), 500);
-                        }
+            const row = parseInt(squareElement.dataset.row);
+            const col = parseInt(squareElement.dataset.col);
+            const piece = this.board.squares[row][col];
+
+            if (this.board.selectedPiece) {
+                if (this.board.possibleMoves.some(([r, c]) => r === row && c === col)) {
+                    this.makeMove([this.board.selectedPiece.position, [row, col]]);
+                    
+                    if (!this.board.gameOver && this.board.currentTurn === this.aiColor) {
+                        setTimeout(() => this.aiMove(), 500);
                     }
-                    this.board.selectedPiece = null;
-                    this.board.possibleMoves = [];
-                } else if (piece && piece.color === this.board.currentTurn) {
-                    this.board.selectedPiece = piece;
-                    this.board.possibleMoves = this.board.getValidMoves(piece);
                 }
-
-                this.updateBoard();
-                document.querySelectorAll('.square').forEach(sq => sq.classList.remove('selected'));
-                if (this.board.selectedPiece) {
-                    const selectedSquare = document.querySelector(
-                        `.square[data-row="${this.board.selectedPiece.position[0]}"][data-col="${this.board.selectedPiece.position[1]}"]`
-                    );
-                    selectedSquare.classList.add('selected');
-                }
+                this.board.selectedPiece = null;
+                this.board.possibleMoves = [];
+            } else if (piece && piece.color === this.board.currentTurn) {
+                this.board.selectedPiece = piece;
+                this.board.possibleMoves = this.board.getValidMoves(piece);
             }
+
+            this.updateBoard();
+            document.querySelectorAll('.square').forEach(sq => sq.classList.remove('selected'));
+            if (this.board.selectedPiece) {
+                const selectedSquare = document.querySelector(
+                    `.square[data-row="${this.board.selectedPiece.position[0]}"][data-col="${this.board.selectedPiece.position[1]}"]`
+                );
+                selectedSquare.classList.add('selected');
+            }
+        }
 
             makeMove([from, to]) {
                 this.board.movePiece(from, to);
