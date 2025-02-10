@@ -125,7 +125,8 @@ body {
 @media (width <= 650px) {
 
 	.game-container{
-	width: 100vw;
+		display: flex;
+		flex-direction: column;	
 	}
-	
+
 }
