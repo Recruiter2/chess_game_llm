@@ -121,3 +121,11 @@ body {
 	}
 
 }
+
+@media (width <= 650px) {
+
+	.game-container{
+	width: 100vw;
+	}
+	
+}
