@@ -115,9 +115,10 @@ body {
 
 @media (width <= 1024px) {
 
-	.square {
-      width: auto;
-     }
+.square {
+		width: 12.5vw;
+  		height: 12.5vw;
+	}
 
     .game-container {
       width: 100%;	
@@ -132,6 +133,11 @@ body {
 	.game-container{
 		display: flex;
 		flex-direction: column;	
+		width: none;
 	}
+	.board {
+		width: none;
+	}
+	
 
 }
