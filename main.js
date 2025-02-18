@@ -8,15 +8,26 @@ class Piece {
 
             get symbol() {
                 const symbols = {
-                    king: '♔',
-                    queen: '♕',
-                    rook: '♖',
-                    bishop: '♗',
-                    knight: '♘',
-                    pawn: '♙'
+                    king: '♚',
+                    queen: '♛',
+                    rook: '♜',
+                    bishop: '♝',
+                    knight: '♞',
+                    pawn: '♟'
                 };
-                return String.fromCodePoint(symbols[this.type].codePointAt(0) + (this.color === 'black' ? 6 : 0));
+                let res ='';
+
+
+                res = symbols[this.type]
+                //inverse operation Array.from("♕", (codeUnit) => codeUnit.codePointAt())
+                //console.log(Array.from("♛", (codeUnit) => codeUnit.codePointAt()));
+                if (this.color != 'black') {
+                    res = '<span style="color: #ffffff;">' + symbols[this.type] + '</span>'
+                }
+                return res
             }
+
+
         }
 
         class Board {
@@ -34,6 +45,7 @@ class Piece {
                 for (let i = 0; i < 8; i++) {
                     this.squares[1][i] = new Piece('pawn', 'black', [1, i]);
                     this.squares[6][i] = new Piece('pawn', 'white', [6, i]);
+                    
                 }
 
                 // Initialize other pieces
@@ -50,6 +62,7 @@ class Piece {
                         const piece = this.squares[row][col];
                         if (piece && piece.type === 'king' && piece.color === color) {
                             return [row, col];
+
                         }
                     }
                 }
@@ -266,6 +279,7 @@ class Piece {
                 this.aiColor = 'black';
                 this.setupBoard();
                 this.updateStatus();
+            
             }
 
             setupBoard() {
@@ -292,6 +306,7 @@ class Piece {
                     const piece = this.board.squares[row][col];
                     square.innerHTML = piece ? piece.symbol : '';
                     square.querySelectorAll('.possible-move').forEach(m => m.remove());
+
                 });
 
                 this.board.possibleMoves.forEach(([r, c]) => {
